@@ -548,7 +548,6 @@ SOURCE is a dotted pair (TOOL . FILE-NAME).
                  (mapcar 'file-name-nondirectory files))))
 
 (cl-defun cov--go-get-dir (fname)
-  (message "go-get-dir: %s" (file-name-directory fname))
   (car (process-lines "go" "list" "-f" "{{.Dir}}" (file-name-directory fname))))
 
 
@@ -639,7 +638,6 @@ binary. Finally run gcov for all source files (or use `cov-gen').
          ((looking-at "\\s-*-:\\s-*0:Source:\\(.*\\)")
           (setq cur-file (match-string 1)))
          ((looking-at "\\s-*\\(\[0-9]+\\):\\s-*\\(\[0-9]+\\):")
-          (message "shit2")
           (cov-add-block-to-profile
            profile
            cur-file
