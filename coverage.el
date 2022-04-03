@@ -86,6 +86,11 @@
   :group 'tools
   :prefix "cov-")
 
+(defcustom cov-go-profile-cmd "go test -covermode=atomic -coverprofile="
+  "The command to run to generate a go coverage file."
+  :type 'string
+  :group 'cov)
+
 (defcustom cov-background t
   "When non-nil, add background overlays to the buffer.
 
@@ -509,7 +514,7 @@ SOURCE is a dotted pair (TOOL . FILE-NAME).
       (while (re-search-forward "^\\(.+\\):\\([0-9]+\\).\\([0-9]+\\),\\([0-9]+\\).\\([0-9]+\\) \\([0-9]+\\) \\([0-9]+\\)$" nil t)
         (cov-add-block-to-profile
          profile
-         (match-string 1)
+         (file-name-nondirectory (match-string 1))
          (cov-make-block :start-line (string-to-number (match-string 2))
                          ;; 1- because in Emacs columns start at 0 but
                          ;; in Go they start at 1.
@@ -525,7 +530,7 @@ SOURCE is a dotted pair (TOOL . FILE-NAME).
       :id 'go-coverage
       :modes '(go-mode gopher-mode)
       :compile-command (lambda (out-fname)
-                         (concat "go test -covermode=count -coverprofile="
+                         (concat cov-go-profile-cmd
                                  out-fname))
       :parse-compilation-results (lambda ()
                                    (when (re-search-forward "^go\\s-+test.*-coverprofile=\\([-~/[:alnum:]_.${}#%,:]+\\)" nil t)
@@ -535,12 +540,19 @@ SOURCE is a dotted pair (TOOL . FILE-NAME).
                 ;; Use 'go list' to avoid handling GOPATH, vendoring etc.
                 (cl-letf ((files (cov--profile-files profile)))
                   (when files
-                    (concat (file-name-as-directory (car (cov--go-list-root files))) "src/"))))))
+                    (file-name-as-directory (car (cov--go-list-dir files))))))))
 
-(cl-defun cov--go-list-root (files)
+(cl-defun cov--go-list-dir (files)
   (apply 'process-lines
-         (append '("go" "list" "-f" "{{.Root}}")
-                 (mapcar 'file-name-directory files))))
+         (append '("go" "list" "-f" "{{.Dir}}")
+                 (mapcar 'file-name-nondirectory files))))
+
+(cl-defun cov--go-get-dir (fname)
+  (message "go-get-dir: %s" (file-name-directory fname))
+  (car (process-lines "go" "list" "-f" "{{.Dir}}" (file-name-directory fname))))
+
+
+
 
 ;; Tool: lcov
 
